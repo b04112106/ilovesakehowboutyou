@@ -1,0 +1,7 @@
+node_modules
+dist
+.DS_Store
+*.log
+
+# Plaintext question bank — never commit. Only data.enc is public.
+src/questions.json

@@ -1,0 +1,25 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Local build artifacts (optional — keep questions.csv in repo if you want)
+_questions_raw.txt
+
+# Plaintext question bank — keep local only.
+questions.csv
+
+# Source PDFs (copyrighted SSI material — do not publish).
+# Remove these lines if you want to commit the PDFs.
+*.pdf
+local_util/
+local_resource/
