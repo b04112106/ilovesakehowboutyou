@@ -313,7 +313,7 @@ function startQuiz(chapter, mode, limit) {
         idx: 0,
         mode,
         chapter,
-        picked: null,
+        picks: [],
         correctCount: 0,
         answeredCount: 0,
     };
@@ -324,6 +324,7 @@ function renderQuiz() {
     const wrap = el("div");
     const q = state.pool[state.idx];
     const total = state.pool.length;
+    const picked = state.picks[state.idx] ?? null;
     const chLabel =
         state.chapter === "all"
             ? "全題庫"
@@ -357,11 +358,11 @@ function renderQuiz() {
     }
     panel.appendChild(opts);
 
-    if (state.picked) {
-        revealAnswer(opts, q);
-        const fb = el("div", "feedback " + (state.picked === q.ans ? "ok" : "ng"));
+    if (picked) {
+        revealAnswer(opts, q, picked);
+        const fb = el("div", "feedback " + (picked === q.ans ? "ok" : "ng"));
         fb.textContent =
-            state.picked === q.ans
+            picked === q.ans
                 ? "✅ 答對了！"
                 : `❌ 答錯了，正解：${q.ans}. ${q.options[q.ans]}`;
         panel.appendChild(fb);
@@ -380,26 +381,31 @@ function renderQuiz() {
     );
     actions.appendChild(backBtn);
 
+    const navGroup = el("div", "row");
+    const prevBtn = makeBtn("← 上一題", () => prevQuestion());
+    prevBtn.disabled = state.idx <= 0;
+    navGroup.appendChild(prevBtn);
+
     const nextBtn = makeBtn(
         state.idx + 1 >= total ? "完成" : "下一題 →",
         () => nextQuestion(),
         "btn-primary"
     );
-    nextBtn.disabled = !state.picked;
-    actions.appendChild(nextBtn);
+    navGroup.appendChild(nextBtn);
+    actions.appendChild(navGroup);
     wrap.appendChild(actions);
 
     return wrap;
 }
 
 function selectAnswer(letter, optsEl, panelEl) {
-    if (state.picked) return;
+    if (state.picks[state.idx]) return;
     const q = state.pool[state.idx];
-    state.picked = letter;
+    state.picks[state.idx] = letter;
     state.answeredCount += 1;
     if (letter === q.ans) state.correctCount += 1;
     recordAnswer(q, letter);
-    revealAnswer(optsEl, q);
+    revealAnswer(optsEl, q, letter);
 
     const fb = el("div", "feedback " + (letter === q.ans ? "ok" : "ng"));
     fb.textContent =
@@ -412,14 +418,14 @@ function selectAnswer(letter, optsEl, panelEl) {
     if (nextBtn) nextBtn.disabled = false;
 }
 
-function revealAnswer(optsEl, q) {
+function revealAnswer(optsEl, q, picked) {
     const buttons = optsEl.querySelectorAll(".option");
     const letters = ["A", "B", "C", "D"];
     buttons.forEach((b, i) => {
         const letter = letters[i];
         b.classList.add("revealed");
         if (letter === q.ans) b.classList.add("correct");
-        else if (letter === state.picked) b.classList.add("wrong");
+        else if (letter === picked) b.classList.add("wrong");
     });
 }
 
@@ -431,7 +437,12 @@ function nextQuestion() {
         return;
     }
     state.idx += 1;
-    state.picked = null;
+    render();
+}
+
+function prevQuestion() {
+    if (state.idx <= 0) return;
+    state.idx -= 1;
     render();
 }
 
@@ -506,6 +517,17 @@ function makeBtn(label, onClick, cls) {
 
 async function boot() {
     render(); // show login immediately
+    document.addEventListener("keydown", (e) => {
+        if (state.view !== "quiz") return;
+        if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+        if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            prevQuestion();
+        } else if (e.key === "ArrowRight") {
+            e.preventDefault();
+            nextQuestion();
+        }
+    });
     const savedPw = sessionStorage.getItem(PW_KEY);
     if (savedPw) {
         try {
